@@ -1,9 +1,11 @@
 NAME := mini_serv
 
+SRCS := main.c
+
 all : $(NAME)
 
-$(NAME) : Makefile mini_serv.c
-	cc -Wall -Wextra -Werror mini_serv.c -o $(NAME)
+$(NAME) : Makefile $(SRCS)
+	cc -Wall -Wextra -Werror $(SRCS) -o $(NAME)
 
 run : 
 	$(MAKE) all
