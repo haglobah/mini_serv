@@ -9,47 +9,47 @@
 
 typedef struct s_client
 {
-	int fd;
-	int id;
-	struct s_client *next;
-}	t_client;
+	int				fd;
+	int				id;
+	struct s_client	*next;
+}					t_client;
 
-t_client 	*clients = NULL;
-fd_set		current, readset, writeset;
-int 		sockfd, g_id;
-char 		msg[200000], buf[200040];
+t_client	*clients = NULL;
+fd_set		current, read_set, write_set;
+int			sockfd, g_id;
+char		msg[200000], buf[200040];
 
-void eprint(char *msg)
+void	eprint(char *msg)
 {
 	write(2, msg, strlen(msg));
 }
 
-void fatal()
+void	fatal()
 {
 	eprint("Fatal error\n");
 	close(sockfd);
 	exit(1);
 }
 
-int get_max_fd()
+int	get_max_fd()
 {
-	int	maxfd = sockfd;
-	t_client *tmp = clients;
+	int			maxfd = sockfd;
+	t_client	*tmp = clients;
 
-	while(tmp)
+	while (tmp)
 	{
 		if (tmp->fd > maxfd)
 			maxfd = tmp->fd;
-		tmp = tmp->next;	
+		tmp = tmp->next;
 	}
-	return(maxfd);
+	return (maxfd);
 }
 
-int get_id(int fd)
+int	get_id(int fd)
 {
-	t_client *tmp = clients;
+	t_client	*tmp = clients;
 
-	while(tmp)
+	while (tmp)
 	{
 		if (tmp->fd == fd)
 			return (tmp->id);
@@ -58,13 +58,13 @@ int get_id(int fd)
 	return (-10);
 }
 
-void send_to_all(int from)
+void	send_to_all(int from)
 {
-	t_client *tmp = clients;
+	t_client	*tmp = clients;
 
 	while (tmp)
 	{
-		if (tmp->fd != from && FD_ISSET(tmp->fd, &writeset))
+		if (tmp->fd != from && FD_ISSET(tmp->fd, &write_set))
 		{
 			if (send(tmp->fd, buf, strlen(buf), 0) == -1)
 				fatal();
@@ -73,25 +73,25 @@ void send_to_all(int from)
 	}
 }
 
-void add_client()
+void	add_client()
 {
-	t_client *tmp = clients;
-	t_client *new;
-	int clientfd;
-	struct sockaddr_in 	clientaddr;
+	t_client			*tmp = clients;
+	t_client			*new;
+	int					client;
+	struct sockaddr_in	clientaddr;
 	socklen_t			len = sizeof(clientaddr);
 
-	clientfd = accept(sockfd, (struct sockaddr *)&clientaddr, &len);
-	if (clientfd == -1)
+	client = accept(sockfd, (struct sockaddr *)&clientaddr, &len);
+	if (client == -1)
 		fatal();
 	bzero(&buf, sizeof(buf));
 	sprintf(buf, "server: client %d just arrived\n", g_id);
-	send_to_all(clientfd);
-	FD_SET(clientfd, &current);
+	send_to_all(client);
+	FD_SET(client, &current);
 	new = malloc(sizeof(t_client));
 	if (!new)
 		fatal();
-	new->fd = clientfd;
+	new->fd = client;
 	new->id = g_id++;
 	new->next = NULL;
 	if (!clients)
@@ -100,14 +100,14 @@ void add_client()
 	{
 		while (tmp->next)
 			tmp = tmp->next;
-		tmp->next = tmp;
+		tmp->next = new;
 	}
 }
 
-void rm_client(int fd)
+void	rm_client(int fd)
 {
-	t_client *to_del = NULL;
-	t_client *tmp = clients;
+	t_client	*to_del = NULL;
+	t_client	*tmp = clients;
 
 	bzero(&buf, sizeof(buf));
 	sprintf(buf, "server: client %d just left\n", get_id(fd));
@@ -133,14 +133,14 @@ void rm_client(int fd)
 	close(fd);
 }
 
-void extract_msg(int fd)
+void	extract_msg(int fd)
 {
-	char	tmp[20000];
+	char	tmp[200000];
 	int		i = -1;
 	int		j = -1;
 
 	bzero(&tmp, sizeof(tmp));
-	while (msg[++i])
+	while (msg[++i] != 0)
 	{
 		tmp[++j] = msg[i];
 		if (msg[i] == '\n')
@@ -155,22 +155,21 @@ void extract_msg(int fd)
 	bzero(&msg, sizeof(msg));
 }
 
-int main (int ac, char **av) 	
+int	main(int argc, char **argv)
 {
-	if (ac != 2)
+	if (argc != 2)
 	{
 		eprint("Wrong number of arguments\n");
 		exit(1);
 	}
 
-	struct sockaddr_in servaddr;
+	struct sockaddr_in	servaddr;
 	bzero(&servaddr, sizeof(servaddr));
-	servaddr.sin_family = AF_INET; 
-	servaddr.sin_addr.s_addr = htonl(2130706433); //127.0.0.1
-	servaddr.sin_port = htons(atoi(av[1])); 
+	servaddr.sin_family = AF_INET;
+	servaddr.sin_addr.s_addr = htonl(2130706433);
+	servaddr.sin_port = htons(atoi(argv[1]));
 
-	// socket creation and verification 
-	sockfd = socket(AF_INET, SOCK_STREAM, 0); 
+	sockfd = socket(AF_INET, SOCK_STREAM, 0);
 	if (sockfd == -1)
 		fatal();
 	if (bind(sockfd, (const struct sockaddr *)&servaddr, sizeof(servaddr)) == -1)
@@ -184,29 +183,29 @@ int main (int ac, char **av)
 
 	while (1)
 	{
-		readset = writeset = current;
-		if (select(get_max_fd() + 1, &readset, &writeset, NULL, NULL) == -1)
-			continue;
+		read_set = write_set = current;
+		if (select(get_max_fd() + 1, &read_set, &write_set, NULL, NULL) == -1)
+			continue ;
 		for (int fd = 0; fd <= get_max_fd(); ++fd)
 		{
-			if (!FD_ISSET(fd, &readset))
+			if (FD_ISSET(fd, &read_set))
 			{
 				if (fd == sockfd)
 				{
 					add_client();
-					break;
+					break ;
 				}
-				int ret = 1;
+				int	ret = 1;
 				while (ret == 1 && msg[strlen(msg) - 1] != '\n')
 				{
 					ret = recv(fd, msg + strlen(msg), 1, 0);
 					if (ret <= 0)
-						break;
+						break ;
 				}
 				if (ret <= 0)
 				{
 					rm_client(fd);
-					break;
+					break ;
 				}
 				extract_msg(fd);
 			}
