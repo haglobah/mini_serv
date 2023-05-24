@@ -173,7 +173,7 @@ int main (int ac, char **av)
 	sockfd = socket(AF_INET, SOCK_STREAM, 0); 
 	if (sockfd == -1)
 		fatal();
-	if (bind(sockfd, (const struct sockadr *)&servaddr, sizeof(servaddr)) == -1)
+	if (bind(sockfd, (const struct sockaddr *)&servaddr, sizeof(servaddr)) == -1)
 		fatal();
 	if (listen(sockfd, 100) == -1)
 		fatal();
