@@ -1,9 +1,62 @@
-#include <errno.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include <netdb.h>
 #include <sys/socket.h>
+#include <sys/select.h>
 #include <netinet/in.h>
+
+typedef struct s_client
+{
+	int fd;
+	int id;
+	struct s_client *next;
+}	t_client;
+
+t_client 	*clients = NULL;
+fd_set		current, readset, writeset;
+int 		sockfd, g_id;
+char 		buf[200000], msg[200040];
+
+void eprint(char *msg)
+{
+	write(2, msg, strlen(msg));
+}
+
+void fatal()
+{
+	eprint("Fatal error\n");
+	close(sockfd);
+	exit(1);
+}
+
+int get_max_fd()
+{
+	int	maxfd = sockfd;
+	t_client *tmp = clients;
+
+	while(tmp)
+	{
+		if (tmp->fd > maxfd)
+			maxfd = tmp->fd;
+		tmp = tmp->next;	
+	}
+	return(maxfd);
+}
+
+int get_id(int fd)
+{
+	t_client *tmp = clients;
+
+	while(tmp)
+	{
+		if (tmp->fd == fd)
+			return (tmp->id);
+		tmp = tmp->next;
+	}
+	return (-10);
+}
 
 int extract_message(char **buf, char **msg)
 {
