@@ -184,6 +184,32 @@ int main (int ac, char **av)
 
 	while (1)
 	{
-		
+		readset = writeset = current;
+		if (select(get_max_fd() + 1, &readset, &writeset, NULL, NULL) == -1)
+			continue;
+		for (int fd = 0; fd <= get_max_fd(); ++fd)
+		{
+			if (!FD_ISSET(fd, &readset))
+			{
+				if (fd == sockfd)
+				{
+					add_client();
+					break;
+				}
+				int ret = 1;
+				while (ret == 1 && msg[strlen(msg) - 1] != '\n')
+				{
+					ret = recv(fd, msg + strlen(msg), 1, 0);
+					if (ret <= 0)
+						break;
+				}
+				if (ret <= 0)
+				{
+					rm_client(fd);
+					break;
+				}
+				extract_msg(fd);
+			}
+		}
 	}
 }
