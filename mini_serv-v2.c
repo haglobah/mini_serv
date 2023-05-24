@@ -173,6 +173,7 @@ int main(int argc, char **argv)
 	}
 
 	struct sockaddr_in	servaddr;
+	FD_ZERO(&servaddr);
 	servaddr.sin_family = AF_INET;
 	servaddr.sin_addr.s_addr = htonl(2130706433);
 	servaddr.sin_port = htons(atoi(argv[1]));
