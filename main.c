@@ -17,7 +17,7 @@ typedef struct s_client
 t_client 	*clients = NULL;
 fd_set		current, readset, writeset;
 int 		sockfd, g_id;
-char 		buf[200000], msg[200040];
+char 		msg[200000], buf[200040];
 
 void eprint(char *msg)
 {
@@ -56,6 +56,81 @@ int get_id(int fd)
 		tmp = tmp->next;
 	}
 	return (-10);
+}
+
+void send_to_all(int from)
+{
+	t_client *tmp = clients;
+
+	while (tmp)
+	{
+		if (tmp->fd != from && FD_ISSET(tmp->fd, &writeset))
+		{
+			if (send(tmp->fd, buf, strlen(buf), 0) == -1)
+				fatal();
+		}
+		tmp = tmp->next;
+	}
+}
+
+void add_client()
+{
+	t_client *tmp = clients;
+	t_client *new;
+	int clientfd;
+	struct sockaddr_in 	clientaddr;
+	socklen_t			len = sizeof(clientaddr);
+
+	clientfd = accept(sockfd, (struct sockaddr *)&clientaddr, &len);
+	if (clientfd == -1)
+		fatal();
+	bzero(&buf, sizeof(buf));
+	sprintf(buf, "server: client %d just arrived\n", g_id);
+	send_to_all(clientfd);
+	FD_SET(clientfd, &current);
+	new = malloc(sizeof(t_client));
+	if (!new)
+		fatal();
+	new->fd = clientfd;
+	new->id = g_id++;
+	new->next = NULL;
+	if (!clients)
+		clients = new;
+	else
+	{
+		while (tmp->next)
+			tmp = tmp->next;
+		tmp->next = tmp;
+	}
+}
+
+void rm_client(int fd)
+{
+	t_client *to_del = NULL;
+	t_client *tmp = clients;
+
+	bzero(&buf, sizeof(buf));
+	sprintf(buf, "server: client %d just left\n", get_id(fd));
+	send_to_all(fd);
+	if (clients && clients->fd == fd)
+	{
+		to_del = clients;
+		clients = clients->next;
+	}
+	else
+	{
+		while (tmp && tmp->next && tmp->next->fd != fd)
+			tmp = tmp->next;
+		if (tmp && tmp->next && tmp->next->fd == fd)
+		{
+			to_del = tmp->next;
+			tmp->next = tmp->next->next;
+		}
+	}
+	if (to_del)
+		free(to_del);
+	FD_CLR(fd, &current);
+	close(fd);
 }
 
 int extract_message(char **buf, char **msg)
