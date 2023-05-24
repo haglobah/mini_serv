@@ -133,53 +133,27 @@ void rm_client(int fd)
 	close(fd);
 }
 
-int extract_message(char **buf, char **msg)
+void extract_msg(int fd)
 {
-	char	*newbuf;
-	int	i;
+	char	tmp[20000];
+	int		i = -1;
+	int		j = -1;
 
-	*msg = 0;
-	if (*buf == 0)
-		return (0);
-	i = 0;
-	while ((*buf)[i])
+	bzero(&tmp, sizeof(tmp));
+	while (msg[++i])
 	{
-		if ((*buf)[i] == '\n')
+		tmp[++j] = msg[i];
+		if (msg[i] == '\n')
 		{
-			newbuf = calloc(1, sizeof(*newbuf) * (strlen(*buf + i + 1) + 1));
-			if (newbuf == 0)
-				return (-1);
-			strcpy(newbuf, *buf + i + 1);
-			*msg = *buf;
-			(*msg)[i + 1] = 0;
-			*buf = newbuf;
-			return (1);
+			bzero(&buf, sizeof(buf));
+			sprintf(buf, "client %d: %s", get_id(fd), tmp);
+			send_to_all(fd);
+			bzero(&tmp, sizeof(tmp));
+			j = -1;
 		}
-		i++;
 	}
-	return (0);
+	bzero(&msg, sizeof(msg));
 }
-
-char *str_join(char *buf, char *add)
-{
-	char	*newbuf;
-	int		len;
-
-	if (buf == 0)
-		len = 0;
-	else
-		len = strlen(buf);
-	newbuf = malloc(sizeof(*newbuf) * (len + strlen(add) + 1));
-	if (newbuf == 0)
-		return (0);
-	newbuf[0] = 0;
-	if (buf != 0)
-		strcat(newbuf, buf);
-	free(buf);
-	strcat(newbuf, add);
-	return (newbuf);
-}
-
 
 int main() {
 	int sockfd, connfd, len;
