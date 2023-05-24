@@ -155,42 +155,35 @@ void extract_msg(int fd)
 	bzero(&msg, sizeof(msg));
 }
 
-int main() {
-	int sockfd, connfd, len;
-	struct sockaddr_in servaddr, cli; 
+int main (int ac, char **av) 	
+{
+	if (ac != 2)
+	{
+		eprint("Wrong number of arguments\n");
+		exit(1);
+	}
 
-	// socket create and verification 
-	sockfd = socket(AF_INET, SOCK_STREAM, 0); 
-	if (sockfd == -1) { 
-		printf("socket creation failed...\n"); 
-		exit(0); 
-	} 
-	else
-		printf("Socket successfully created..\n"); 
-	bzero(&servaddr, sizeof(servaddr)); 
-
-	// assign IP, PORT 
+	struct sockaddr_in servaddr;
+	bzero(&servaddr, sizeof(servaddr));
 	servaddr.sin_family = AF_INET; 
 	servaddr.sin_addr.s_addr = htonl(2130706433); //127.0.0.1
-	servaddr.sin_port = htons(8081); 
-  
-	// Binding newly created socket to given IP and verification 
-	if ((bind(sockfd, (const struct sockaddr *)&servaddr, sizeof(servaddr))) != 0) { 
-		printf("socket bind failed...\n"); 
-		exit(0); 
-	} 
-	else
-		printf("Socket successfully binded..\n");
-	if (listen(sockfd, 10) != 0) {
-		printf("cannot listen\n"); 
-		exit(0); 
+	servaddr.sin_port = htons(atoi(av[1])); 
+
+	// socket creation and verification 
+	sockfd = socket(AF_INET, SOCK_STREAM, 0); 
+	if (sockfd == -1)
+		fatal();
+	if (bind(sockfd, (const struct sockadr *)&servaddr, sizeof(servaddr)) == -1)
+		fatal();
+	if (listen(sockfd, 100) == -1)
+		fatal();
+
+	FD_ZERO(&current);
+	FD_SET(sockfd, &current);
+	bzero(&msg, sizeof(msg));
+
+	while (1)
+	{
+		
 	}
-	len = sizeof(cli);
-	connfd = accept(sockfd, (struct sockaddr *)&cli, &len);
-	if (connfd < 0) { 
-        printf("server acccept failed...\n"); 
-        exit(0); 
-    } 
-    else
-        printf("server acccept the client...\n");
 }
