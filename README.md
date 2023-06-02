@@ -38,7 +38,8 @@ $ nc 127.0.0.1 8080
 server: client 1 just arrived
 lala
 client 1: hohoho
-
+^C
+$ 
 ```
 </td>
 <td>
@@ -47,6 +48,7 @@ client 1: hohoho
 $ nc 127.0.0.1 8080
 client 0: lala
 hohoho
+server: client 0 just left
 
 ```
 </td>
