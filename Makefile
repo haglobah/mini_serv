@@ -1,6 +1,6 @@
 NAME := mini_serv
 
-SRCS := main.c
+SRCS := mini_serv.c
 
 all : $(NAME)
 
